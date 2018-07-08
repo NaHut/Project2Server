@@ -24,37 +24,48 @@ db.once('open', function() {
   });
 
 /*Schema generation*/
-var Login = new mongoose.Schema({
+var LoginSchema = new mongoose.Schema({
     userId : {type:String, required : true, unique : true},
     password : {type:String, required:true, trim:true} //trim : 공백제거
 }); //Login collection에 들어가는 document들의 조건
-var userInfo = new mongoose.Schema({
+
+var userInfoSchema = new mongoose.Schema({
     userId : {type:String, required : true, unique : true},
     name : {type:String, required : true},
     profile : String
 }) //userInfo collection에 들어가는 document들의 조건
 
-var friendList = new mongoose.SchemaType({
+var friendListSchema = new mongoose.Schema({
     name : String,
     phoneNumber : String,
     profile : String
 })
 
-var friends = new mongoose.Schema({
+var friendsSchema = new mongoose.Schema({
     userId : {type : String, required:true, unique : true},
-    friendList : friendList,
+    friendList : friendListSchema,
     profile : {profile : String}
 }) //friends collection에 들어가는 document들의 조건
 
-var imgList = new mongoose.Schema({
+var imgListSchema = new mongoose.Schema({
     title : String,
     img : String
 })
 
-var gallery = new mongoose.Schema({
+var gallerySchema = new mongoose.Schema({
     userid : {type : String, required : true, unique : true},
-    imgList : imgList
+    imgList : imgListSchema
 })// Gallery collection에 들어가는 document들의 조건
+
+mongoose.model('Login',LoginSchema,'Login');
+mongoose.model('userInfo',userInfoSchema,'userInfo');
+mongoose.model('friends',friendsSchema,'friends');
+mongoose.model('gallery',gallerySchema,'gallery');
+
+var Login_collection = mongoose.model('Login');
+var userInfo_collection = mongoose.model('userInfo');
+var friends_collection = mongoose.model('friends');
+var gallery_collection = mongoose.model('gallery');
 
 /*Server Create*/
 
@@ -69,16 +80,28 @@ var server = http.createServer(function(request,response){
         postdata=postdata+data;
     });
 
+    var tag = "login"; // Request body 부분의 tag에 따라서 response가 달라짐.
+
     /*data Handling*/
     // 1.Client에 login이 맞는지 틀린지 data 전송 
     var check = "false"; //true : login success , false : login fail
     response.on('end',function(){
-        response.send(check);
-    })
-
+        switch(tag){
+            case "login" :
+                response.write(check);
+                break;
+            case "load" :
+                //postdata로 userId가 들어옴.
+                var _user_ = postdata;
+                Login_collection.findOne({userId:_user_})
+                response.write();
+                break;
+            case 
+        }
+    });
     // 2.login
 
-    
+
 });
 
 server.listen(8080, function(){
