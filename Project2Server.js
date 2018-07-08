@@ -24,37 +24,48 @@ db.once('open', function() {
   });
 
 /*Schema generation*/
-var Login = new mongoose.Schema({
+var LoginSchema = new mongoose.Schema({
     userId : {type:String, required : true, unique : true},
     password : {type:String, required:true, trim:true} //trim : 공백제거
 }); //Login collection에 들어가는 document들의 조건
-var userInfo = new mongoose.Schema({
+
+var userInfoSchema = new mongoose.Schema({
     userId : {type:String, required : true, unique : true},
     name : {type:String, required : true},
     profile : String
 }) //userInfo collection에 들어가는 document들의 조건
 
-var friendList = new mongoose.SchemaType({
+var friendListSchema = new mongoose.Schema({
     name : String,
     phoneNumber : String,
     profile : String
 })
 
-var friends = new mongoose.Schema({
+var friendsSchema = new mongoose.Schema({
     userId : {type : String, required:true, unique : true},
-    friendList : friendList,
+    friendList : friendListSchema,
     profile : {profile : String}
 }) //friends collection에 들어가는 document들의 조건
 
-var imgList = new mongoose.Schema({
+var imgListSchema = new mongoose.Schema({
     title : String,
     img : String
 })
 
-var gallery = new mongoose.Schema({
+var gallerySchema = new mongoose.Schema({
     userid : {type : String, required : true, unique : true},
-    imgList : imgList
+    imgList : imgListSchema
 })// Gallery collection에 들어가는 document들의 조건
+
+mongoose.model('Login',LoginSchema,'Login');
+mongoose.model('userInfo',userInfoSchema,'userInfo');
+mongoose.model('friends',friendsSchema,'friends');
+mongoose.model('gallery',gallerySchema,'gallery');
+
+var Login_collection = mongoose.model('Login');
+var userInfo_collection = mongoose.model('userInfo');
+var friends_collection = mongoose.model('friends');
+var gallery_collection = mongoose.model('gallery');
 
 /*Server Create*/
 
@@ -62,14 +73,46 @@ var server = http.createServer(function(request,response){
     /*GET request에 해당하는 data*/
     var parsedUrl = url.parse(request.url);
     var parsedQuery = querystring.parse(parsedUrl.query,'&','=');  
-    
+        
     /*POST request에 해당하는 data*/
     var postdata='';
     request.on('data', function(data){
         postdata=postdata+data;
     });
+    var tag = "load"; // Request body 부분의 tag에 따라서 response가 달라짐.
 
     /*data Handling*/
+    // 1.Client에 login이 맞는지 틀린지 data 전송 
+    var check = "false"; //true : login success , false : login fail
+    request.on('end',function(){
+        switch(tag){
+            case "login" :
+                response.end(check);
+                break;
+            case "load" :
+                //GET request && userId = String형식으로 들어옴.
+                var _user_ = parsedQuery.userId;
+                var query = {userId : _user_};
+                var projection = {friendList : 1};
+                var cursor = friends_collection.collection.find(query,projection);
+                var result_json;
+                cursor.each(function(err,doc){
+                    if(err){
+                        console.log(err);
+                    }else{
+                        if(doc != null){
+                            //console.log(doc.friendList);
+                            result_json=doc.friendList;
+                        }
+                        
+                    }
+                });
+                response.end(result_json);
+                break;
+        }
+    });
+    // 2.login
+
 
 });
 
