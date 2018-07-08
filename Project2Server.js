@@ -53,11 +53,7 @@ var imgListSchema = new mongoose.Schema({
 })
 
 var gallerySchema = new mongoose.Schema({
-<<<<<<< HEAD
     userid : {type : String, required : true, unique : true},
-=======
-    userId : {type : String, required : true, unique : true},
->>>>>>> hyeongjun
     imgList : imgListSchema
 })// Gallery collection에 들어가는 document들의 조건
 
@@ -87,7 +83,6 @@ var server = http.createServer(function(request,response){
 
     /*data Handling*/
     // 1.Client에 login이 맞는지 틀린지 data 전송 
-<<<<<<< HEAD
     var check = "false"; //true : login success , false : login fail
     request.on('end',function(){
         switch(tag){
@@ -118,14 +113,12 @@ var server = http.createServer(function(request,response){
     });
     // 2.login
 
-=======
     var check = false; //true : login success , false : login fail
     request.on('end',async function(){
         
         //postdata를 parsing해준다
         //1)Post Man에서 post 형식으로 보내줄때 사용
         var postParsedQuery = querystring.parse(postdata);
->>>>>>> hyeongjun
 
         //2)android 에서 JSON Object로 보내줄때 사용
         // var postParsedQuery =JSON.parse(postdata);
