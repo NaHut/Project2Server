@@ -73,30 +73,42 @@ var server = http.createServer(function(request,response){
     /*GET request에 해당하는 data*/
     var parsedUrl = url.parse(request.url);
     var parsedQuery = querystring.parse(parsedUrl.query,'&','=');  
-    
+        
     /*POST request에 해당하는 data*/
     var postdata='';
     request.on('data', function(data){
         postdata=postdata+data;
     });
-
-    var tag = "login"; // Request body 부분의 tag에 따라서 response가 달라짐.
+    var tag = "load"; // Request body 부분의 tag에 따라서 response가 달라짐.
 
     /*data Handling*/
     // 1.Client에 login이 맞는지 틀린지 data 전송 
     var check = "false"; //true : login success , false : login fail
-    response.on('end',function(){
+    request.on('end',function(){
         switch(tag){
             case "login" :
-                response.write(check);
+                response.end(check);
                 break;
             case "load" :
-                //postdata로 userId가 들어옴.
-                var _user_ = postdata;
-                Login_collection.findOne({userId:_user_})
-                response.write();
+                //GET request && userId = String형식으로 들어옴.
+                var _user_ = parsedQuery.userId;
+                var query = {userId : _user_};
+                var projection = {friendList : 1};
+                var cursor = friends_collection.collection.find(query,projection);
+                var result_json;
+                cursor.each(function(err,doc){
+                    if(err){
+                        console.log(err);
+                    }else{
+                        if(doc != null){
+                            //console.log(doc.friendList);
+                            result_json=doc.friendList;
+                        }
+                        
+                    }
+                });
+                response.end(result_json);
                 break;
-            case 
         }
     });
     // 2.login
