@@ -70,7 +70,15 @@ var server = http.createServer(function(request,response){
     });
 
     /*data Handling*/
+    // 1.Client에 login이 맞는지 틀린지 data 전송 
+    var check = "false"; //true : login success , false : login fail
+    response.on('end',function(){
+        response.send(check);
+    })
 
+    // 2.login
+
+    
 });
 
 server.listen(8080, function(){
