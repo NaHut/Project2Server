@@ -9,6 +9,8 @@
  *                         "imgList": [{"title" : "셀카","img":"img_path"},{...},...]}] 
  */
 
+
+
 /*variable for server request*/
 var http = require('http');
 var url =require('url');
@@ -53,7 +55,7 @@ var imgListSchema = new mongoose.Schema({
 })
 
 var gallerySchema = new mongoose.Schema({
-    userid : {type : String, required : true, unique : true},
+    userId : {type : String, required : true, unique : true},
     imgList : imgListSchema
 })// Gallery collection에 들어가는 document들의 조건
 
@@ -67,7 +69,12 @@ var userInfo_collection = mongoose.model('userInfo');
 var friends_collection = mongoose.model('friends');
 var gallery_collection = mongoose.model('gallery');
 
-/*Server Create*/
+/*Login Const values */
+const LOGIN = 1;
+const WRONG_PW = 2;
+const NOT_MEMBER = 3; 
+
+  /*Server Create*/
 
 var server = http.createServer(function(request,response){
     /*GET request에 해당하는 data*/
@@ -81,39 +88,13 @@ var server = http.createServer(function(request,response){
     });
     var tag = "load"; // Request body 부분의 tag에 따라서 response가 달라짐.
 
-    /*data Handling*/
-    // 1.Client에 login이 맞는지 틀린지 data 전송 
-    var check = "false"; //true : login success , false : login fail
-    request.on('end',function(){
-        switch(tag){
-            case "login" :
-                response.end(check);
-                break;
-            case "load" :
-                //GET request && userId = String형식으로 들어옴.
-                var _user_ = parsedQuery.userId;
-                var query = {userId : _user_};
-                var projection = {friendList : 1};
-                var cursor = friends_collection.collection.find(query,projection);
-                var result_json;
-                cursor.each(function(err,doc){
-                    if(err){
-                        console.log(err);
-                    }else{
-                        if(doc != null){
-                            //console.log(doc.friendList);
-                            result_json=doc.friendList;
-                        }
-                        
-                    }
-                });
-                response.end(result_json);
-                break;
-        }
-    });
-    // 2.login
+  
+    
+    /*
+    1. LOGIN = login 성공, 2. WRONG_PW = password 틀림, 3. NOT_MEMBER = 멤버가 아님
+     */
+    var isMember = NOT_MEMBER;
 
-    var check = false; //true : login success , false : login fail
     request.on('end',async function(){
         
         //postdata를 parsing해준다
@@ -121,29 +102,60 @@ var server = http.createServer(function(request,response){
         var postParsedQuery = querystring.parse(postdata);
 
         //2)android 에서 JSON Object로 보내줄때 사용
-        // var postParsedQuery =JSON.parse(postdata);
+        var postParsedQuery =JSON.parse(postdata);
         
+        //device에 보내줄 결과값을 저장하기 위한 JSON OBJECT
+        var jsonObj ;
         //tag 값을 얻는다.
         tag = postParsedQuery.tag;
 
+        console.log("your input");
         console.log(postParsedQuery);
     
         switch(tag){
             case "login" :
                 //login 정보가 DB에 들어 있는지 확인한다.
-                check = await isSigned(postParsedQuery,Login_collection,response);
+                isMember = await isSigned(postParsedQuery,Login_collection);
+               
+                //각 상황별 핸들링을 해준다
+                if(isMember == LOGIN){
+                    console.log("Login success");
+                    jsonObj = {"result" : "LOGIN"};
+                    response.end(JSON.stringify(jsonObj));
+                }
+                else if(isMember == WRONG_PW){
+                    console.log("Wrong password");
+                    jsonObj = {"result" : "WRONG_PW"};
+                    response.end(JSON.stringify(jsonObj));
+                }
+                else{
+                    console.log("ID is not existed");
+                    jsonObj = {"result" : "NOT_MEMBER"}
+                    response.end(JSON.stringify(jsonObj));
+                }
                 break;
+                
             case "signUp":
-                //db에 중복되는지 확인한다.
+                //login 정보가 DB에 들어 있느지 확인한다.
+                isMember = await isSigned(postParsedQuery,Login_collection);
 
-                //중복되지 않는다면 DB에 login정보를 넣어준다.
-                var userId = postParsedQuery.userId;
-                var password = postParsedQuery.password;
-                var user = {userId : userId, password : password};
-                Login_collection.collection.insert(user);
-
-                //회원가입을 알린다.
+                //각 상황별 핸들링을 해준다
+                if(isMember == LOGIN || isMember == WRONG_PW){
+                    console.log("You are already the member");
+                    jsonObj = {"result" : "ALREADY_MEMBER"}
+                    response.end(JSON.stringify(jsonObj));
+                }
+                else{
+                    var userId = postParsedQuery.userId;
+                    var password = postParsedQuery.password;
+                    var user = {userId : userId, password : password};
+                    Login_collection.collection.insert(user);
+                    console.log("Sign Up completed");
+                    jsonObj = {"result" : "SIGN_UP"}
+                    response.end(JSON.stringify(jsonObj));
+                }   
                 break;
+
             case "load" :
                 //GET request && userId = String형식으로 들어옴.
                 var userId = parsedQuery.userId;
@@ -175,18 +187,24 @@ server.listen(8080, function(){
     console.log('Server is running...');
 });
 
-async function isSigned(postParsedQuery, Login_collection, response){
-    //login 정보가 DB에 들어 있는지 확인한다.
-    var check = false;
+/*
+post로 받은 user의 id와 pw가 DB와 매칭이 되는지 확인한다.
+*/
+async function isSigned(postParsedQuery, Login_collection){
+    var check = NOT_MEMBER;
     var userId = postParsedQuery.userId;
     var query = {userId : userId };
     var cursor = await Login_collection.collection.find(query);
     
     for(let doc = await cursor.next(); doc!=null; doc = await cursor.next()){
         try{
-            if(doc!=null){
-                check = true;
-                response.end("Id is listed in DB");
+            if(doc.password == postParsedQuery.password && doc!=null){
+                check = LOGIN;
+                break;
+            }
+            else if(doc!=null){
+                check = WRONG_PW;
+                break;
             }
         }
         catch(err){
