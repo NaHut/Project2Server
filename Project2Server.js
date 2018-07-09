@@ -99,10 +99,10 @@ var server = http.createServer(function(request,response){
         
         //postdata를 parsing해준다
         //1)Post Man에서 post 형식으로 보내줄때 사용
-        var postParsedQuery = querystring.parse(postdata);
+        // var postParsedQuery = querystring.parse(postdata);
 
         //2)android 에서 JSON Object로 보내줄때 사용
-        // var postParsedQuery =JSON.parse(postdata);
+        var postParsedQuery =JSON.parse(postdata);
         
         //device에 보내줄 결과값을 저장하기 위한 JSON OBJECT
         var jsonObj ;
