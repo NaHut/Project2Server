@@ -321,7 +321,7 @@ var server = http.createServer(async function(request,response){
                     //args: [user_data.title, user_data.content, json_data, user_data.from_email, user_data.pw] //이거는 고민해봐야함
                     args : [sentence]
                 };
-   var pyshell = new PythonShell('main_simple_seq2seq.py',options)
+                 var pyshell = new PythonShell('main_simple_seq2seq.py',options)
                 await PythonShell.run("main_simple_seq2seq.py", options, function(err){
                     if(err) console.log('------------err msg : ', err);
                 });
